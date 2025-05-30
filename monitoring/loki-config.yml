@@ -1,0 +1,52 @@
+auth_enabled: false #Отключена аутентификация, небезопастно для прода! 
+
+server:
+  http_listen_port: 3100 #Порт на котором слушает Loki, на него будет promtail отправлять запросы
+
+
+ingester:
+  lifecucler:
+    ring:
+      kvstore:
+        store: inmemory # хранит кольцо интгестеров в памяти (не для продакшана).
+      replication_factor: 1 #Кол-во реплик данных( 1 - нет репликации).
+  chunk_idle_period: 5m # Как быстро флашит чанки после флаша.
+  chunk_retain_period: 30s # Как долго хранить чанки после флаша.
+  max_chunk_age: 1h # Максимальный возвраст чанка перед флешем. 
+
+
+schema_config:
+  configs:
+    - from: 2020-10-24 #Дата начала действия схемы.
+      store: boltdb-shipper #Использует BoltDB для индексов.  
+      object_store: filesystem #хранит чанки на файловой системе.
+      schema: v11 # Версия схемы Loki
+      index:
+        prefix: index_ #Префикс для индексов
+        period: 24h #Период ротации индексов
+  
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/index #директория для активных индексов
+    cache_location: /loki/boltdb-cache #Директория для кеша BoltDB
+  filesystem:
+    directory: /loki/chunks #Директория для хранения чанков логов.
+
+limits_config:
+  retention_period: 168h #Хранить логи 
+  allow_structured_metadata: false #Запрещает структурированные метаданные
+
+
+table_manager:
+  retention_deletes_enabled: true #Включено автоматическое удаление старых данных
+  retention_period: 168h # Соответствует `retention_period` в `limits_config`
+
+
+query_scheduler:
+  max_outstanding_requests_per_tenant: 2048 # Лимит запросов на тенант.
+
+common:
+  path_prefix: /tmp/loki # Базовый путь для временных файлов ( не для прода!)
+
+
